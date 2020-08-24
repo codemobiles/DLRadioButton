@@ -9,8 +9,6 @@ static BOOL _groupModifing = NO;
 
 @implementation DLRadioButton
 
-@synthesize otherButtons = _otherButtons;
-
 - (void)setOtherButtons:(NSArray *)otherButtons {
     if (![DLRadioButton isGroupModifing]) {
         [DLRadioButton groupModifing:YES];
@@ -22,22 +20,7 @@ static BOOL _groupModifing = NO;
         }
         [DLRadioButton groupModifing:NO];
     }
-    NSMutableArray *otherButtonsForCurrentButton = [[NSMutableArray alloc] initWithCapacity:otherButtons.count];
-    for (DLRadioButton *radioButton in otherButtons) {
-        [otherButtonsForCurrentButton addObject:[NSValue valueWithNonretainedObject:radioButton]];
-    }
-    _otherButtons = [otherButtonsForCurrentButton copy];
-}
-
-- (NSArray *)otherButtons {
-    if ([_otherButtons count]) {
-        NSMutableArray *buttons = [[NSMutableArray alloc] initWithCapacity:[_otherButtons count]];
-        for (NSValue *value in _otherButtons) {
-            [buttons addObject:[value nonretainedObjectValue]];
-        }
-        return buttons;
-    }
-    return nil;
+    _otherButtons = otherButtons;
 }
 
 - (void)setIcon:(UIImage *)icon {
@@ -84,11 +67,8 @@ static BOOL _groupModifing = NO;
     }
     CGFloat marginWidth = self.marginWidth;
     BOOL isRightToLeftLayout = NO;
-    if (@available(iOS 9.0, *)) {
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0) {
         isRightToLeftLayout = [UIView userInterfaceLayoutDirectionForSemanticContentAttribute:self.semanticContentAttribute] == UIUserInterfaceLayoutDirectionRightToLeft;
-        if(isRightToLeftLayout){
-          self.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
-        }
     }
     if (self.isIconOnRight) {
         self.imageEdgeInsets = isRightToLeftLayout ?
@@ -99,7 +79,7 @@ static BOOL _groupModifing = NO;
         UIEdgeInsetsMake(0, -self.icon.size.width, 0, marginWidth + self.icon.size.width);
     } else {
         if (isRightToLeftLayout) {
-            self.titleEdgeInsets = UIEdgeInsetsMake(0, 0, 0, marginWidth);
+            self.imageEdgeInsets = UIEdgeInsetsMake(0, marginWidth, 0, 0);
         } else {
             self.titleEdgeInsets = UIEdgeInsetsMake(0, marginWidth, 0, 0);
         }
@@ -113,12 +93,12 @@ static BOOL _groupModifing = NO;
     CGFloat iconSize = self.iconSize;
     CGFloat iconStrokeWidth = self.iconStrokeWidth ? self.iconStrokeWidth : iconSize / 9;
     CGFloat indicatorSize = self.indicatorSize ? self.indicatorSize : iconSize * 0.5;
-
+    
     CGRect rect = CGRectMake(0, 0, iconSize, iconSize);
     CGContextRef context = UIGraphicsGetCurrentContext();
     UIGraphicsPushContext(context);
     UIGraphicsBeginImageContextWithOptions(rect.size, NO, 0.0);
-
+    
     // draw icon
     UIBezierPath* iconPath;
     CGRect iconRect = CGRectMake(iconStrokeWidth / 2, iconStrokeWidth / 2, iconSize - iconStrokeWidth, iconSize - iconStrokeWidth);
@@ -131,7 +111,7 @@ static BOOL _groupModifing = NO;
     iconPath.lineWidth = iconStrokeWidth;
     [iconPath stroke];
     CGContextAddPath(context, iconPath.CGPath);
-
+    
     // draw indicator
     if (selected) {
         UIBezierPath* indicatorPath;
@@ -145,21 +125,17 @@ static BOOL _groupModifing = NO;
         [indicatorPath fill];
         CGContextAddPath(context, indicatorPath.CGPath);
     }
-
+    
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsPopContext();
     UIGraphicsEndImageContext();
-
+    
     image.accessibilityIdentifier = kGeneratedIconName;
     return image;
 }
 
 - (void)touchUpInside {
-    if (self.isMultipleSelectionEnabled) {
-        [self setSelected:!self.isSelected];
-    } else {
-        [self setSelected:YES];
-    }
+    [self setSelected:YES];
 }
 
 - (void)initRadioButton {
@@ -234,7 +210,7 @@ static BOOL _groupModifing = NO;
         }
         [self setTitleColor:selectedOrHighlightedColor forState:UIControlStateSelected | UIControlStateHighlighted];
     }
-
+    
     return [super titleColorForState:state];
 }
 
@@ -252,10 +228,14 @@ static BOOL _groupModifing = NO;
         animation.toValue = self.isSelected ? (id)self.icon.CGImage : (id)self.iconSelected.CGImage;
         [self.imageView.layer addAnimation:animation forKey:@"icon"];
     }
-
-    [super setSelected:selected];
-    if (!self.isMultipleSelectionEnabled && selected) {
-        [self deselectOtherButtons];
+    
+    if (self.isMultipleSelectionEnabled) {
+        [super setSelected:!self.isSelected];
+    } else {
+        [super setSelected:selected];
+        if (selected) {
+            [self deselectOtherButtons];
+        }
     }
 }
 

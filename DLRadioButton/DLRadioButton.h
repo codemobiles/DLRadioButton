@@ -31,6 +31,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)deselectOtherButtons;
 
+- (void)setSelected:(BOOL)selected;
+
 #pragma mark - Customization
 
 /**
@@ -62,6 +64,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @brief Margin width between icon and title, default is kDefaultMarginWidth.
  */
 @property (nonatomic) IBInspectable CGFloat marginWidth;
+
+//Mark :: Hack index Question
+@property (nonatomic) IBInspectable NSInteger indexQuestion;
 
 /**
  * @brief Whether icon on the right side, default is NO.
